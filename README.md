@@ -85,6 +85,9 @@ BACKUP_MODE:
  - **single**:
 	In **single** mode, the backup script push every single file into the S3 bucket .
 
+ - **full**:
+	In **full** mode, the backup script will perform a backup of the whole database and push it into the S3 bucket .
+
 #### schemas.lis ####
 
 > ORACLE_SCHEMA_1
