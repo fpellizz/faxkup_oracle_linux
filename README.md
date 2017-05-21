@@ -25,7 +25,7 @@ or clone this repository
 >
 > $ cd /opt/faxkup
 >
-> $ git clone user:password@repository.url
+> $ git clone https://github.com/fpellizz/faxkup_oracle_linux.git
 
 you can use a different  directory, **this script MUST run as ROOT**
 
