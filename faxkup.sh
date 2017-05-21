@@ -1,13 +1,13 @@
 #!/bin/bash
 
-. ./faxkup.config
+. /opt/faxkup/faxkup.config
 
 function check_log(){
     if [ ! -s $LOG_PATH/$LOG_FILE ];
     then
         echo "####################################################"  > $LOG_PATH/$LOG_FILE
-        echo "# FaxCup Setup                                      " >> $LOG_PATH/$LOG_FILE
-        echo "# FaxCup the Fax Backup                             " >> $LOG_PATH/$LOG_FILE
+        echo "# Faxkup Setup                                      " >> $LOG_PATH/$LOG_FILE
+        echo "# Faxkup the Fax Backup                             " >> $LOG_PATH/$LOG_FILE
         echo "# first run => $TIMESTAMP                           " >> $LOG_PATH/$LOG_FILE
         echo "####################################################" >> $LOG_PATH/$LOG_FILE
         echo ""                                                     >> $LOG_PATH/$LOG_FILE
@@ -241,6 +241,16 @@ function check_prerequisites(){
 }
 
 
+function clean_env(){
+    LOG_MSG="Cleaning environment..."
+    write_to_log    
+    cd $CURRENT_DIR
+    find . -name "*.error" -exec rm -rf {} \;
+    LOG_MSG="Clean terminated..."
+    write_to_log
+}
+
+
 function clean(){
     LOG_MSG="Cleaning workspace..."
     write_to_log    
@@ -276,6 +286,27 @@ function sns_notify(){
 }
 
 
+function check_prebackup_error(){
+    #check for prebackup errors
+    if [ -f ./prebackup.error ];
+    then
+        LOG_MSG="Something went wrong in prebackup steps. Please check logfile"
+        write_to_log
+        error_state=1
+    fi
+}
+
+
+function check_postbackup_error(){
+    #check for postbackup errors
+    if [ -f ./postbackup.error ];
+    then
+        LOG_MSG="Something went wrong in postbackup steps. Please check logfile"
+        write_to_log
+        error_state=1
+    fi
+}
+
 clear
 
 LOG_MSG="**** Start backup $TIMESTAMP ****"
@@ -286,9 +317,15 @@ am_i_root
 LOG_MSG="Checking prerequisites"
 write_to_log
 
+clean_env
+
 check_prerequisites
 
 error_state=0
+
+$HOME_DIR/prebackup.sh
+
+check_prebackup_error
 
 cd $ORACLE_DATA_PUMP_DIR
 
@@ -313,7 +350,7 @@ do
         LOG_MSG="Datapump $schema_name done... "
         write_to_log
     else
-        #exit or continue? continue mi sa che Ã¨ meglio 
+        #exit or continue? continue mi sa che è meglio 
         echo "ERROR"
         LOG_MSG="Something went wrong in $schema_name datapump. Jump to next schemas"
         write_to_log
@@ -332,7 +369,7 @@ do
             LOG_MSG="Tar ${schema_name}_${TIMESTAMP}.tar.gz done... "
             write_to_log
         else
-            #exit or continue? continue mi sa che Ã¨ meglio 
+            #exit or continue? continue mi sa che è meglio 
             echo "ERROR"
             LOG_MSG="Something went wrong with tar ${schema_name}_${TIMESTAMP}.tar.gz. Jump to next schemas"
             write_to_log
@@ -411,7 +448,7 @@ case "$BACKUP_MODE" in
                 LOG_MSG="Error tarring ALL_SCHEMAS_${TIMESTAMP}.tar.gz"
                 write_to_log
                 error_state=1
-                #gestione alternativa, in caso iÃ¬di errore nell'upload su S3, esce e notifica l'errore
+                #gestione alternativa, in caso iìdi errore nell'upload su S3, esce e notifica l'errore
                 #MESSAGE="Somethings went wrong while tarring ALL_SCHEMAS_${TIMESTAMP}.tar.gz . Backup failed"
                 #sns_notify
                 #exit
@@ -441,6 +478,10 @@ esac
 
 clean
 
+$HOME_DIR/postbackup.sh
+
+check_postbackup_error
+
 echo $CURRENT_DIR
 cd $CURRENT_DIR
 
@@ -448,17 +489,20 @@ if [ $error_state -eq 0 ];
 then
     LOG_MSG="**** Backup seems to be ok. See you next time. Bye  ****"
     MESSAGE=$SNS_MESSAGE
+    sns_notify
+    write_to_log
 else
     LOG_MSG="**** Backup finished whit some errors. Please check this log. Bye ****"
     MESSAGE="BACKUP WITH ERRORS!! Check log for more info $SNS_MESSAGE"
+    sns_notify
+    write_to_log
 fi
 
-sns_notify
+#sns_notify
 
-if [ $error_state -eq 0 ];
-then
-    LOG_MSG="**** Backup seems to be ok. See you next time. Bye  ****"
-else
-    LOG_MSG="**** Backup finished whit some errors. Please check this log. Bye ****"
-fi
-write_to_log
+#if [ $error_state -eq 0 ];
+#then
+#    LOG_MSG="**** Backup seems to be ok. See you next time. Bye  ****"
+#else
+#    LOG_MSG="**** Backup finished whit some errors. Please check this log. Bye ****"
+#fi

@@ -3,9 +3,10 @@
 ### Simple script to backup schemas from Oracle DB and save them on aws S3 ###
 
 * Quick summary
-This is a simple bash script, who gets a list of Oracle schemas and backup them (using datapump), then tar and gzip every dumpfile and finally push the archive (or the archives) on an aws S3 bucket. 
-
-* Version 1.0
+This is a simple bash script, who get a list of Oracle schemas and backup them (using datapump), then tar and gzip every dumpfile and finally push the archive (or the archives) on an aws S3 bucket. 
+Now it is possible to run a "prebackup" and a "postbackup" scripts. 
+With these scripts you can perrform any action before and after the oracle "core" backup.
+* Version 1.1
 
 ### Dependencies ###
 
@@ -36,6 +37,8 @@ You have to configure two different file:
 
 #### faxkup.config ####
 
+> HOME_DIR=/oath/to/home/directory (tipically: /op/faxkup)
+> 
 > TIMESTAMP=$(date +%Y-%m-%d)
 > 
 > CURRENT_DIR=$(pwd)
@@ -104,7 +107,31 @@ To run the faxkup backup, simply run faxkup.sh script.
 >
 > \# ./faxkup.sh
 
+You can schedule the faxkup using crontab, **always as root**
+
+>\# crontab -e
+>
+>\# 59 23 * * * /bin/bash /opt/faxkup/faxkup.sh > /opt/faxkup/faxkup.out 2>&1
+>
+
+without the output redirection sometimes you can have some strange behaviuor like unexpected end of backup script without any error
+
+
 ### Logging ###
 Each time this script runs, write a log of his activities, **faxkup.log**. 
 This log is located into the faxkup home directory, tipically /opt/faxkup.
 The log is very easy ro read.
+
+### OPTIONAL ###
+You can create your prebackup and postbackup script.
+In **prebackup** script you can tell to the bakcup system to perform a specific action **BEFORE** running backup the oracle schemas of the schema.list file, for example tar a folder and add the tar to the oracle backup.
+In **postbackup** script you can tell to the bakcup system to perform a specific action **AFTER** running backup the oracle schemas of the schema.list file, for example send a mail notification in case of errors.
+
+### ISSUE ###
+In some case you can have a very misteriuos mistery behaviour when you crontab this backup, in some case i've font a "porkaround" using **screen**. 
+
+>\# crontab -l
+>
+>\# 59 23 * * * /usr/bin/screen -d -c "/opt/faxkup/faxkup.sh"
+>
+
