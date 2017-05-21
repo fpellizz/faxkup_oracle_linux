@@ -131,10 +131,14 @@ In **prebackup** script you can tell to the bakcup system to perform a specific 
 In **postbackup** script you can tell to the bakcup system to perform a specific action **AFTER** running backup the oracle schemas of the schema.list file, for example send a mail notification in case of errors.
 
 ### ISSUE ###
-In some case you can have a very misteriuos mistery behaviour when you crontab this backup, in some case i've font a "porkaround" using **screen**. 
+In some case you can have a very misteriuos mistery behaviour when you crontab this backup, I've found a "porkaround" using **screen**. 
 
 >\# crontab -l
 >
 >\# 59 23 * * * /usr/bin/screen -d -c "/opt/faxkup/faxkup.sh"
 >
 
+### TO DO ###
+ 1. store on local path
+ 2. backup mode override using switch from command line ./faxbackup.sh -f => full backup
+ 3. Try to explore "differential" backup
