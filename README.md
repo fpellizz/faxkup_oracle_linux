@@ -142,3 +142,5 @@ In some case you can have a very misteriuos mistery behaviour when you crontab t
  1. store on local path
  2. backup mode override using switch from command line ./faxbackup.sh -f => full backup
  3. Try to explore "differential" backup
+ 4. Add check for datapump folder
+ 5. Add enable/disable switch for prebackup and postbackup scripts
