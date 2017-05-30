@@ -323,87 +323,156 @@ check_prerequisites
 
 error_state=0
 
-$HOME_DIR/prebackup.sh
-
-check_prebackup_error
+if [ $ENABLE_PREBACKUP -eq 1 ]; 
+then
+    $HOME_DIR/prebackup.sh
+    check_prebackup_error
+fi
 
 cd $ORACLE_DATA_PUMP_DIR
 
-while read schema_name
-do  
+if [ $BACKUP_MODE == "full"]; 
+then
+    #do a full backup
     LOG_MSG="-----------------------------------------------------------------------------------"
     write_to_log
     
-    LOG_MSG="Processing ${schema_name} "
+    LOG_MSG="Performing a FULL backup of database"
     write_to_log
     
     LOG_MSG="Datapumping $schema_name... "
     write_to_log
-    #Variabile che gestisce eventuali errori solo all'interno dell'iterazione.
-    #Viene usata per eseguire o meno lo step successivo
-    iteration_error=0
-    su - $ORACLE_SO_USER -c "expdp $ORACLE_DB_SYSTEM_USER/$ORACLE_DB_SYSTEM_PASSWORD dumpfile=${schema_name}_${TIMESTAMP}.dump schemas=$schema_name directory=$ORACLE_BACKUP_DIR logfile=${schema_name}_${TIMESTAMP}.log"
+    echo 'su - $ORACLE_SO_USER -c "expdp $ORACLE_DB_SYSTEM_USER/$ORACLE_DB_SYSTEM_PASSWORD dumpfile=BACKUP_FULL_${TIMESTAMP}.dump full=y directory=$ORACLE_BACKUP_DIR logfile=BACKUP_FULL_${TIMESTAMP}.log"'
     exit_status=$?
     if [ $exit_status -eq 0 ];
     then
         echo "done"
-        LOG_MSG="Datapump $schema_name done... "
+        LOG_MSG="Datapump full database done... "
         write_to_log
     else
-        #exit or continue? continue mi sa che è meglio 
         echo "ERROR"
-        LOG_MSG="Something went wrong in $schema_name datapump. Jump to next schemas"
+        LOG_MSG="Something went wrong in full database datapump. See log for errors"
         write_to_log
         error_state=1
         iteration_error=1
-    fi      
+    fi        
+    
     if [ $iteration_error -eq 0 ];
     then
-        LOG_MSG="Tarring ${schema_name}_${TIMESTAMP}.dump... "
+        LOG_MSG="Tarring BACKUP_FULL_${TIMESTAMP}.dump... "
         write_to_log
-        tar -zcf ${schema_name}_${TIMESTAMP}.tar.gz ${schema_name}_${TIMESTAMP}.dump
+        tar -zcf BACKUP_FULL_${TIMESTAMP}.tar.gz BACKUP_FULL_${TIMESTAMP}.dump
         exit_status=$?
         if [ $exit_status -eq 0 ];
         then
             echo "done"
-            LOG_MSG="Tar ${schema_name}_${TIMESTAMP}.tar.gz done... "
-            write_to_log
-        else
-            #exit or continue? continue mi sa che è meglio 
-            echo "ERROR"
-            LOG_MSG="Something went wrong with tar ${schema_name}_${TIMESTAMP}.tar.gz. Jump to next schemas"
-            write_to_log
-            error_state=1
-            iteration_error=1
-        fi    
-    fi
-
-    if [ $iteration_error -eq 0 ];
-    then 
-        LOG_MSG="Removing ${schema_name}_${TIMESTAMP}.dump... "
-        write_to_log
-        rm -rf ${schema_name}_${TIMESTAMP}.dump
-        exit_status=$?
-        if [ $exit_status -eq 0 ];
-        then
-            echo "done"
-            LOG_MSG="Done with ${schema_name}"
+            LOG_MSG="Tar BACKUP_FULL_${TIMESTAMP}.tar.gz done... "
             write_to_log
         else
             echo "ERROR"
-            LOG_MSG="Cannot delete ${schema_name}_${TIMESTAMP}.dump... You have to clear it manually"
+            LOG_MSG="Something went wrong with tar BACKUP_FULL_${TIMESTAMP}.tar.gz. See log for errors"
             write_to_log
             error_state=1
             iteration_error=1
         fi
+    fi    
+    if [ $iteration_error -eq 0 ];
+    then 
+        LOG_MSG="Removing BACKUP_FULL_${TIMESTAMP}.dump... "
+        write_to_log
+        rm -rf BACKUP_FULL_${TIMESTAMP}.dump
+        exit_status=$?
+        if [ $exit_status -eq 0 ];
+        then
+            echo "done"
+            LOG_MSG="Done with full database backup"
+            write_to_log
+        else
+            echo "ERROR"
+            LOG_MSG="Cannot delete BACKUP_FULL_${TIMESTAMP}.dump... You have to clear it manually"
+            write_to_log
+            error_state=1
+            iteration_error=1
+        fi
+        LOG_MSG="-----------------------------------------------------------------------------------"
+        write_to_log
     fi
-    LOG_MSG="-----------------------------------------------------------------------------------"
-    write_to_log
-done < $BACKUP_SCHEMAS_LIST
-
+else
+    while read schema_name
+    do  
+        LOG_MSG="-----------------------------------------------------------------------------------"
+        write_to_log
+        
+        LOG_MSG="Processing ${schema_name} "
+        write_to_log
+        
+        LOG_MSG="Datapumping $schema_name... "
+        write_to_log
+        #Variabile che gestisce eventuali errori solo all'interno dell'iterazione.
+        #Viene usata per eseguire o meno lo step successivo
+        iteration_error=0
+        su - $ORACLE_SO_USER -c "expdp $ORACLE_DB_SYSTEM_USER/$ORACLE_DB_SYSTEM_PASSWORD dumpfile=${schema_name}_${TIMESTAMP}.dump schemas=$schema_name directory=$ORACLE_BACKUP_DIR logfile=${schema_name}_${TIMESTAMP}.log"
+        exit_status=$?
+        if [ $exit_status -eq 0 ];
+        then
+            echo "done"
+            LOG_MSG="Datapump $schema_name done... "
+            write_to_log
+        else
+            #exit or continue? continue mi sa che è meglio 
+            echo "ERROR"
+            LOG_MSG="Something went wrong in $schema_name datapump. Jump to next schemas"
+            write_to_log
+            error_state=1
+            iteration_error=1
+        fi      
+        if [ $iteration_error -eq 0 ];
+        then
+            LOG_MSG="Tarring ${schema_name}_${TIMESTAMP}.dump... "
+            write_to_log
+            tar -zcf ${schema_name}_${TIMESTAMP}.tar.gz ${schema_name}_${TIMESTAMP}.dump
+            exit_status=$?
+            if [ $exit_status -eq 0 ];
+            then
+                echo "done"
+                LOG_MSG="Tar ${schema_name}_${TIMESTAMP}.tar.gz done... "
+                write_to_log
+            else
+                #exit or continue? continue mi sa che è meglio 
+                echo "ERROR"
+                LOG_MSG="Something went wrong with tar ${schema_name}_${TIMESTAMP}.tar.gz. Jump to next schemas"
+                write_to_log
+                error_state=1
+                iteration_error=1
+            fi    
+        fi
+        if [ $iteration_error -eq 0 ];
+        then 
+            LOG_MSG="Removing ${schema_name}_${TIMESTAMP}.dump... "
+            write_to_log
+            rm -rf ${schema_name}_${TIMESTAMP}.dump
+            exit_status=$?
+            if [ $exit_status -eq 0 ];
+            then
+                echo "done"
+                LOG_MSG="Done with ${schema_name}"
+                write_to_log
+            else
+                echo "ERROR"
+                LOG_MSG="Cannot delete ${schema_name}_${TIMESTAMP}.dump... You have to clear it manually"
+                write_to_log
+                error_state=1
+                iteration_error=1
+            fi
+        fi
+        LOG_MSG="-----------------------------------------------------------------------------------"
+        write_to_log
+    done < $BACKUP_SCHEMAS_LIST
+fi
 #backup mode: 
-#               single=backup and push on S3 every single tar.gx file
+#               single= backup and push on S3 every single tar.gx file
 #               compact= backup and push a huge tar.gz file which contains ALL the single tar.gz
+#               full = execute a full backup of the DB, tar the dump and push it to S3
 
 case "$BACKUP_MODE" in
    "single") 
@@ -471,16 +540,44 @@ case "$BACKUP_MODE" in
             error_state=1
         fi               
       ;;
-   *)
+   "full")
+        LOG_MSG="FULL backup mode selected... "
+        write_to_log
+        LOG_MSG="One Tar to rule them all, One Tar to find them, One Tar to bring them all and in the darkness bind them"
+        write_to_log 
+        ################
+        echo "moving BACKUP_FULL_${TIMESTAMP}.tar.gz on s3://$AWS_S3_BUCKET/$AWS_S3_BUCKET_FOLDER/";
+        LOG_MSG="Moving BACKUP_FULL_${TIMESTAMP}.tar.gz on s3://$AWS_S3_BUCKET/$AWS_S3_BUCKET_FOLDER/ ... "
+        write_to_log
+        set_aws_env
+        aws s3 cp BACKUP_FULL_${TIMESTAMP}.tar.gz s3://$AWS_S3_BUCKET/$AWS_S3_BUCKET_FOLDER/
+        exit_status=$?
+        if [ $exit_status -eq 0 ];
+        then
+            echo "done"
+            LOG_MSG="Done"
+            write_to_log
+        else
+            echo "ERROR"
+            LOG_MSG="Error in uploading on S3 BACKUP_FULL_${TIMESTAMP}.tar.gz"
+            write_to_log
+            error_state=1
+        fi               
+      ;;
+*)
       echo "what?!?!?!"
       ;;
 esac
 
 clean
 
-$HOME_DIR/postbackup.sh
+if [ $ENABLE_POSTBACKUP -eq 1 ]; 
+then
+    $HOME_DIR/postbackup.sh
+    check_postbackup_error
+fi
 
-check_postbackup_error
+
 
 echo $CURRENT_DIR
 cd $CURRENT_DIR

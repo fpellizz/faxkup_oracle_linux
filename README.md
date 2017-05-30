@@ -25,7 +25,7 @@ or clone this repository
 >
 > $ cd /opt/faxkup
 >
-> $ git clone user:password@repository.url
+> $ git clone https://github.com/fpellizz/faxkup_oracle_linux.git
 
 you can use a different  directory, **this script MUST run as ROOT**
 
@@ -65,7 +65,7 @@ You have to configure two different file:
 > 
 > AWS_S3_BUCKET_FOLDER="folder_name" (if needed)
 > 
-> BACKUP_MODE="compact" (backup mode: compact/single)
+> BACKUP_MODE="compact" (backup mode: compact/single/full)
 > 
 > SNS_ARN="AWS-SNS-ARN"
 > 
@@ -74,6 +74,10 @@ You have to configure two different file:
 > SNS_MESSAGE="" (notification message, remember to configure it!)
 > 
 > LOG_FILE=faxkup.log
+> 
+> ENABLE_PREBACKUP=0 (0 = disabled, 1 = enabled)
+> 
+> ENABLE_POSTBACKUP=0 (0 = disabled, 1 = enabled)
 
 
 BACKUP_MODE:
@@ -84,6 +88,9 @@ BACKUP_MODE:
 
  - **single**:
 	In **single** mode, the backup script push every single file into the S3 bucket .
+
+ - **full**:
+	In **full** mode, the backup script will perform a backup of the whole database and push it into the S3 bucket .
 
 #### schemas.lis ####
 
@@ -135,3 +142,9 @@ In some case you can have a very misteriuos mistery behaviour when you crontab t
 >\# 59 23 * * * /usr/bin/screen -d -c "/opt/faxkup/faxkup.sh"
 >
 
+### TO DO ###
+ 1. store on local path
+ 2. backup mode override using switch from command line ./faxbackup.sh -f => full backup
+ 3. Try to explore "differential" backup way
+ 4. Add check for datapump folder
+ 5. ~~Add enable/disable switch for prebackup and postbackup scripts~~
