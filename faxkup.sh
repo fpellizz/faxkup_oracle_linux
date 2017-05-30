@@ -323,9 +323,11 @@ check_prerequisites
 
 error_state=0
 
-$HOME_DIR/prebackup.sh
-
-check_prebackup_error
+if [ $ENABLE_PREBACKUP -eq 1 ]; 
+then
+    $HOME_DIR/prebackup.sh
+    check_prebackup_error
+fi
 
 cd $ORACLE_DATA_PUMP_DIR
 
@@ -569,9 +571,13 @@ esac
 
 clean
 
-$HOME_DIR/postbackup.sh
+if [ $ENABLE_POSTBACKUP -eq 1 ]; 
+then
+    $HOME_DIR/postbackup.sh
+    check_postbackup_error
+fi
 
-check_postbackup_error
+
 
 echo $CURRENT_DIR
 cd $CURRENT_DIR

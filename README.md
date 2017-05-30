@@ -65,7 +65,7 @@ You have to configure two different file:
 > 
 > AWS_S3_BUCKET_FOLDER="folder_name" (if needed)
 > 
-> BACKUP_MODE="compact" (backup mode: compact/single)
+> BACKUP_MODE="compact" (backup mode: compact/single/full)
 > 
 > SNS_ARN="AWS-SNS-ARN"
 > 
@@ -74,6 +74,10 @@ You have to configure two different file:
 > SNS_MESSAGE="" (notification message, remember to configure it!)
 > 
 > LOG_FILE=faxkup.log
+> 
+> ENABLE_PREBACKUP=0 (0 = disabled, 1 = enabled)
+> 
+> ENABLE_POSTBACKUP=0 (0 = disabled, 1 = enabled)
 
 
 BACKUP_MODE:
@@ -131,7 +135,7 @@ In **prebackup** script you can tell to the bakcup system to perform a specific 
 In **postbackup** script you can tell to the bakcup system to perform a specific action **AFTER** running backup the oracle schemas of the schema.list file, for example send a mail notification in case of errors.
 
 ### ISSUE ###
-In some case you can have a very misteriuos mistery behaviour when you crontab this backup, I've found a "porkaround" using **screen**. 
+In some case you can have a very misteriuos mistery behaviour when you crontab this backup, in some case i've font a "porkaround" using **screen**. 
 
 >\# crontab -l
 >
@@ -143,4 +147,4 @@ In some case you can have a very misteriuos mistery behaviour when you crontab t
  2. backup mode override using switch from command line ./faxbackup.sh -f => full backup
  3. Try to explore "differential" backup way
  4. Add check for datapump folder
- 5. Add enable/disable switch for prebackup and postbackup scripts
+ 5. ~~Add enable/disable switch for prebackup and postbackup scripts~~
